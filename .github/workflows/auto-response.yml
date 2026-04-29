@@ -1,0 +1,23 @@
+name: Auto Response Draft
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+  discussion:
+    types: [created]
+
+permissions:
+  issues: write
+  discussions: write
+  contents: read
+
+jobs:
+  acknowledge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log event context
+        run: |
+          echo "This workflow is a draft for auto-response handling."
+          echo "It can be extended to post a template reply, tag maintainers, or route RFCs."

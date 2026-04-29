@@ -1,0 +1,27 @@
+name: Weekly Collaboration Summary Draft
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: read
+  discussions: read
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Draft weekly summary
+        run: |
+          mkdir -p artifacts/weekly
+          cat > artifacts/weekly/summary.md <<'EOF'
+          # Weekly Collaboration Summary Draft
+
+          - PRs reviewed this week
+          - RFCs opened in Discussions
+          - SLA follow-ups pending
+          EOF

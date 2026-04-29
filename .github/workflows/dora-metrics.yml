@@ -2,23 +2,23 @@ name: DORA Metrics
 
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: '0 0 * * 1'
   workflow_dispatch:
     inputs:
       window_days:
-        description: "Aggregation window in days"
+        description: 'Aggregation window in days'
         required: false
-        default: "30"
+        default: '30'
       incident_label:
-        description: "Issue label for incidents"
+        description: 'Issue label for incidents'
         required: false
-        default: "incident"
+        default: 'incident'
 
 permissions:
-  contents: read
-  pull-requests: read
-  issues: read
+  contents: write
   deployments: read
+  issues: read
+  pull-requests: read
 
 jobs:
   calculate:
@@ -30,7 +30,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Calculate DORA metrics
         env:
@@ -38,14 +41,15 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
           GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
-          DORA_WINDOW_DAYS: ${{ inputs.window_days || '30' }}
-          DORA_INCIDENT_LABEL: ${{ inputs.incident_label || 'incident' }}
-        run: |
-          node .github/scripts/calc_dora_metrics.mjs
+          DORA_WINDOW_DAYS: ${{ github.event.inputs.window_days || '30' }}
+          DORA_INCIDENT_LABEL: ${{ github.event.inputs.incident_label || 'incident' }}
+        run: node .github/scripts/calc_dora_metrics.mjs
 
-      - name: Upload metrics artifact
+      - name: Upload DORA artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dora-metrics
-          path: artifacts/dora/dora_metrics_latest.json
+          path: |
+            artifacts/dora/dora_metrics_latest.json
+            artifacts/dora/dora_weekly_report.md
           if-no-files-found: error

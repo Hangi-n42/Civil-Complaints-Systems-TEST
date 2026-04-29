@@ -171,6 +171,23 @@ const outputPath = "artifacts/dora/dora_metrics_latest.json";
 mkdirSync(dirname(outputPath), { recursive: true });
 writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf-8");
 
+const reportPath = "artifacts/dora/dora_weekly_report.md";
+const weeklyReport = `# DORA Metrics (${days}d)\n\n`
+  + `- Repository: ${owner}/${repo}\n`
+  + `- Window: ${days} days\n`
+  + `- Generated at: ${report.generated_at}\n\n`
+  + `## Summary\n`
+  + `- Lead Time for Changes (mean h): **${leadTime.mean_hours ?? "N/A"}** (n=${leadTime.sample_size})\n`
+  + `- Deployment Frequency (successful/day): **${deploy.deployment_frequency_per_day ?? "N/A"}** (success=${deploy.successful_deployments})\n`
+  + `- Mean Time to Recovery (mean h): **${mttr.mean_hours ?? "N/A"}** (n=${mttr.sample_size})\n`
+  + `- Change Failure Rate (%): **${deploy.change_failure_rate_percent ?? "N/A"}** (failed=${deploy.failed_deployments})\n\n`
+  + `## Assumptions\n`
+  + `- Lead time: first commit in merged PR -> merge time\n`
+  + `- Deployment frequency: successful GitHub Deployment events per day\n`
+  + `- MTTR: closed issues with label '${incidentLabel}' (created -> closed)\n`
+  + `- Change failure rate: failed deployments / (successful + failed deployments)\n`;
+writeFileSync(reportPath, `${weeklyReport}\n`, "utf-8");
+
 const summary = `## DORA Metrics (${days}d)\n\n`
   + `- Lead Time for Changes (mean h): **${leadTime.mean_hours ?? "N/A"}** (n=${leadTime.sample_size})\n`
   + `- Deployment Frequency (successful/day): **${deploy.deployment_frequency_per_day ?? "N/A"}** (success=${deploy.successful_deployments})\n`

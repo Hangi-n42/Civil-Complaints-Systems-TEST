@@ -104,6 +104,20 @@ AI-Civil-Affairs-Systems/
 - 저장소: https://github.com/Hangi-n42/AI-Civil-Affairs-Systems
 - 이슈: https://github.com/Hangi-n42/AI-Civil-Affairs-Systems/issues
 - PR: https://github.com/Hangi-n42/AI-Civil-Affairs-Systems/pulls
+- Project: https://github.com/users/Hangi-n42/projects/1
+
+## 과제 완료 현황
+
+- 학기 프로젝트 제안서: [docs/project_proposal.md](docs/project_proposal.md)
+- DORA 자동 수집 워크플로우: [.github/workflows/dora-metrics.yml](.github/workflows/dora-metrics.yml)
+- 칸반 Project 및 백로그: [docs/kanban_setup.md](docs/kanban_setup.md)
+
+검증 결과
+- GitHub Project #1 생성 및 저장소 연결 완료
+- 11개 이슈 생성 완료
+- 2개 마일스톤 생성 완료
+- 5단 상태 필드 `Board Status` 생성 완료
+- DORA JSON/SVG/MD 아티팩트 생성 완료
 
 ## 라이선스
 
@@ -111,3 +125,14 @@ AI-Civil-Affairs-Systems/
 
 Last Updated: 2026-04-10
 Status: Active Development
+
+## DORA 지표 자동 수집
+
+- 워크플로우: [.github/workflows/dora-metrics.yml](.github/workflows/dora-metrics.yml)
+- 계산 스크립트: [.github/scripts/calc_dora_metrics.mjs](.github/scripts/calc_dora_metrics.mjs)
+- 시안 대시보드: [docs/dora_dashboard.html](docs/dora_dashboard.html)
+- 대시보드 이미지: [docs/dora_dashboard.svg](docs/dora_dashboard.svg)
+- 자동 수집 스크립트: [scripts/dora_metrics.js](scripts/dora_metrics.js)
+- 칸반/백로그 자동 구성: [scripts/setup_github_board.js](scripts/setup_github_board.js)
+- 생성 결과: [scripts/artifacts/dora-metrics-20260430.json](scripts/artifacts/dora-metrics-20260430.json), [scripts/artifacts/dora-dashboard-20260430.svg](scripts/artifacts/dora-dashboard-20260430.svg), [scripts/artifacts/dora-report-20260430.md](scripts/artifacts/dora-report-20260430.md)
+

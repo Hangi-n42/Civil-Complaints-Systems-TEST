@@ -1,0 +1,11 @@
+{
+  "period_days": 30,
+  "merged_pr_count": 0,
+  "deployment_frequency_per_week": 0,
+  "avg_lead_time_days": null,
+  "mttr_hours": null,
+  "change_failure_rate": 0,
+  "computed_at": "2026-04-29T17:18:14.403Z",
+  "prStats": [],
+  "incidents": []
+}
