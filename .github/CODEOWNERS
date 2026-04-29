@@ -1,0 +1,10 @@
+# Default owners for governance, docs, and workflow files
+* @Hangi-n42
+
+# Collaboration and policy surfaces
+/.github/ @Hangi-n42
+/CONTRIBUTING.md @Hangi-n42
+/docs/ @Hangi-n42
+/scripts/ @Hangi-n42
+/frontend/ @Hangi-n42
+/app/ @Hangi-n42
