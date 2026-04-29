@@ -1,0 +1,26 @@
+name: SLA Tracker Draft
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Draft SLA report
+        run: |
+          mkdir -p artifacts/sla
+          cat > artifacts/sla/sla-summary.md <<'EOF'
+          # SLA Summary Draft
+
+          - Track time-to-first-response for issues/discussions.
+          - Compare response time against the target SLA window.
+          - Produce weekly summary for maintainers.
+          EOF

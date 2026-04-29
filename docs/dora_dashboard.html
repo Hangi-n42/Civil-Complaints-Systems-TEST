@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>DORA Dashboard (Prototype)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>body{font-family:Inter,system-ui;margin:24px}</style>
+  </head>
+  <body>
+    <h2>DORA Metrics (Prototype)</h2>
+    <canvas id="chart" width="800" height="400"></canvas>
+    <script>
+      const ctx = document.getElementById('chart').getContext('2d');
+      const data = { labels: ['Deployment/wk','Lead days','MTTR h'], datasets:[{label:'DORA',data:[2.5,3.2,12], backgroundColor:['#1f77b4','#ff7f0e','#2ca02c']}] };
+      new Chart(ctx, { type: 'bar', data });
+    </script>
+    <p>이 파일은 시안입니다. 워크플로우가 작동하면 scripts/artifacts에서 실제 JSON을 받아 업데이트할 수 있습니다.</p>
+  </body>
+</html>
