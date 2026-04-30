@@ -18,6 +18,14 @@ on:
         options:
           - "true"
           - "false"
+      benchmark_mode:
+        description: Run lightweight benchmark path (true/false)
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
 permissions:
   contents: read
@@ -57,7 +65,9 @@ jobs:
   build:
     name: Build Bundle
     needs: detect_changes
-    if: needs.detect_changes.outputs.app_changed == 'true' || github.event_name == 'workflow_dispatch'
+    if: |
+      needs.detect_changes.outputs.app_changed == 'true' ||
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -88,6 +98,7 @@ jobs:
     with:
       python-version: '3.11'
       cache-enabled: ${{ inputs.cache_enabled || 'true' }}
+      install-profile: ${{ inputs.benchmark_mode == 'true' && 'light' || 'full' }}
 
   test_py312:
     name: Test Reusable (py3.12)
@@ -97,6 +108,7 @@ jobs:
     with:
       python-version: '3.12'
       cache-enabled: ${{ inputs.cache_enabled || 'true' }}
+      install-profile: ${{ inputs.benchmark_mode == 'true' && 'light' || 'full' }}
 
   deploy:
     name: Selective Deploy

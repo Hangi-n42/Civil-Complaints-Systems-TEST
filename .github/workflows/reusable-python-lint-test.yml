@@ -10,6 +10,10 @@ on:
         required: false
         type: string
         default: "true"
+      install-profile:
+        required: false
+        type: string
+        default: "full"
       lint-paths:
         required: false
         type: string
@@ -35,6 +39,7 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
           cache-enabled: ${{ inputs.cache-enabled }}
+          install-profile: ${{ inputs.install-profile }}
 
       - name: Lint
         run: flake8 ${{ inputs.lint-paths }} --count --select=E9,F63,F7,F82 --show-source --statistics
