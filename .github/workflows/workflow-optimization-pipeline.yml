@@ -1,0 +1,133 @@
+name: workflow-optimization-pipeline
+
+on:
+  push:
+    branches:
+      - feature/workflow-Optimization
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      cache_enabled:
+        description: Enable pip cache (true/false)
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+permissions:
+  contents: read
+
+jobs:
+  detect_changes:
+    name: Detect Changed Files
+    runs-on: ubuntu-latest
+    outputs:
+      app_changed: ${{ steps.filter.outputs.app }}
+      docs_only: ${{ steps.filter.outputs.docs_only }}
+      deploy_needed: ${{ steps.filter.outputs.deploy }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            app:
+              - 'app/**'
+              - 'scripts/**'
+              - 'requirements.txt'
+              - '.github/workflows/**'
+              - '.github/actions/**'
+            deploy:
+              - 'app/**'
+              - 'configs/**'
+              - 'frontend/**'
+              - '.github/workflows/**'
+            docs_only:
+              - 'docs/**'
+              - '*.md'
+
+  build:
+    name: Build Bundle
+    needs: detect_changes
+    if: needs.detect_changes.outputs.app_changed == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build bundle
+        run: |
+          tar -czf optimized-build.tar.gz app configs requirements.txt README.md
+          {
+            echo "sha=${GITHUB_SHA}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "cache_enabled=${{ inputs.cache_enabled || 'true' }}"
+          } > build-info.txt
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: optimized-build
+          path: |
+            optimized-build.tar.gz
+            build-info.txt
+
+  test_py310:
+    name: Test Reusable (py3.10)
+    needs: [detect_changes, build]
+    if: needs.detect_changes.outputs.app_changed == 'true' || github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/reusable-python-lint-test.yml
+    with:
+      python-version: '3.10'
+      cache-enabled: ${{ inputs.cache_enabled || 'true' }}
+
+  test_py311:
+    name: Test Reusable (py3.11)
+    needs: [detect_changes, build]
+    if: needs.detect_changes.outputs.app_changed == 'true' || github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/reusable-python-lint-test.yml
+    with:
+      python-version: '3.11'
+      cache-enabled: ${{ inputs.cache_enabled || 'true' }}
+
+  deploy:
+    name: Selective Deploy
+    needs: [detect_changes, test_py310, test_py311]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') &&
+      needs.detect_changes.outputs.deploy_needed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: optimized-build
+          path: deploy-input
+
+      - name: Deploy (dry-run safe)
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+        run: |
+          echo "selective deploy for ${GITHUB_SHA}" > selective-deploy.log
+          if [ -n "${DEPLOY_WEBHOOK_URL}" ]; then
+            curl -sS -X POST "${DEPLOY_WEBHOOK_URL}" \
+              -H "Content-Type: application/json" \
+              -d "{\"sha\":\"${GITHUB_SHA}\",\"run_id\":\"${GITHUB_RUN_ID}\"}" >> selective-deploy.log
+            echo "webhook invoked" >> selective-deploy.log
+          else
+            echo "DEPLOY_WEBHOOK_URL 미설정: dry-run으로 종료" >> selective-deploy.log
+          fi
+
+      - name: Upload deploy log
+        uses: actions/upload-artifact@v4
+        with:
+          name: selective-deploy-log
+          path: selective-deploy.log
