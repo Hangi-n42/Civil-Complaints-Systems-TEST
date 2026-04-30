@@ -120,9 +120,22 @@ AI-Civil-Affairs-Systems/
 - 5단 상태 필드 `Board Status` 생성 완료
 - DORA JSON/SVG/MD 아티팩트 생성 완료
 
-## 라이선스
+## OSS & 거버넌스
 
-대학 졸업 프로젝트 (비공개)
+### 라이선스
+- 라이선스: [MIT License](LICENSE)
+- 저작권 (c) 2024-2026 Hangi-n42 and Civil-Complaints-Systems contributors
+
+### 기여 가이드
+- 기여 방법: [CONTRIBUTING.md](CONTRIBUTING.md)
+- 행동 수칙: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- 라이선스 비교 분석: [docs/oss_license_analysis.md](docs/oss_license_analysis.md)
+
+### Inner Source & 커뮤니티
+- Inner Source 도입 로드맵: [docs/inner_source_roadmap.md](docs/inner_source_roadmap.md)
+- 아키텍처 결정 기록: [docs/adr/README.md](docs/adr/README.md)
+- GitHub Discussions: [Civil-Complaints-Systems-TEST/Discussions](https://github.com/Hangi-n42/Civil-Complaints-Systems-TEST/discussions)
+- RFC 템플릿: [docs/rfc-template.md](docs/rfc-template.md)
 
 Last Updated: 2026-04-30
 Status: Active Development
