@@ -1,0 +1,142 @@
+name: cache-benchmark
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline_no_cache:
+    name: Baseline (no cache)
+    runs-on: ubuntu-latest
+    outputs:
+      elapsed_seconds: ${{ steps.measure.outputs.elapsed_seconds }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Measure install without cache
+        id: measure
+        shell: bash
+        run: |
+          start=$(date +%s)
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+          end=$(date +%s)
+          echo "elapsed_seconds=$((end-start))" >> "$GITHUB_OUTPUT"
+
+  prime_cache:
+    name: Prime cache
+    runs-on: ubuntu-latest
+    needs: baseline_no_cache
+    outputs:
+      elapsed_seconds: ${{ steps.measure.outputs.elapsed_seconds }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Get pip cache directory
+        id: pip-cache-dir
+        shell: bash
+        run: |
+          echo "dir=$(python -m pip cache dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore pip cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache-dir.outputs.dir }}
+          key: benchmark-${{ runner.os }}-py311-pip-${{ hashFiles('.github/workflows/cache-benchmark.yml') }}
+          restore-keys: |
+            benchmark-${{ runner.os }}-py311-pip-
+
+      - name: Measure install with cache (warm)
+        id: measure
+        shell: bash
+        run: |
+          start=$(date +%s)
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+          end=$(date +%s)
+          echo "elapsed_seconds=$((end-start))" >> "$GITHUB_OUTPUT"
+
+  hit_cache:
+    name: Hit cache
+    runs-on: ubuntu-latest
+    needs: prime_cache
+    outputs:
+      elapsed_seconds: ${{ steps.measure.outputs.elapsed_seconds }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Get pip cache directory
+        id: pip-cache-dir
+        shell: bash
+        run: |
+          echo "dir=$(python -m pip cache dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore pip cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache-dir.outputs.dir }}
+          key: benchmark-${{ runner.os }}-py311-pip-${{ hashFiles('.github/workflows/cache-benchmark.yml') }}
+          restore-keys: |
+            benchmark-${{ runner.os }}-py311-pip-
+
+      - name: Measure install with cache (hit)
+        id: measure
+        shell: bash
+        run: |
+          start=$(date +%s)
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+          end=$(date +%s)
+          echo "elapsed_seconds=$((end-start))" >> "$GITHUB_OUTPUT"
+
+  summarize:
+    name: Summarize benchmark
+    runs-on: ubuntu-latest
+    needs: [baseline_no_cache, prime_cache, hit_cache]
+    steps:
+      - name: Generate summary markdown
+        shell: bash
+        run: |
+          b=${{ needs.baseline_no_cache.outputs.elapsed_seconds }}
+          w=${{ needs.prime_cache.outputs.elapsed_seconds }}
+          h=${{ needs.hit_cache.outputs.elapsed_seconds }}
+          improvement=$(python - <<'PY'
+          b = float("${{ needs.baseline_no_cache.outputs.elapsed_seconds }}")
+          h = float("${{ needs.hit_cache.outputs.elapsed_seconds }}")
+          print(f"{((b-h)/b*100):.2f}")
+          PY
+          )
+          {
+            echo "# Cache Benchmark Result"
+            echo
+            echo "- baseline_no_cache: ${b}s"
+            echo "- prime_cache(warm): ${w}s"
+            echo "- hit_cache: ${h}s"
+            echo "- improvement_vs_baseline: ${improvement}%"
+          } > cache-benchmark-summary.md
+
+      - name: Upload benchmark summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: cache-benchmark-summary
+          path: cache-benchmark-summary.md
