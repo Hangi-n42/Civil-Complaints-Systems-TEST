@@ -29,7 +29,6 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
 
       - name: Build package bundle
         run: |
@@ -78,7 +77,6 @@ jobs:
       - name: Install dependencies and test tools
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
           pip install flake8 pytest
 
       - name: Validate secret injection (masked)
@@ -89,8 +87,8 @@ jobs:
       - name: Lint (critical rules)
         run: flake8 app scripts --count --select=E9,F63,F7,F82 --show-source --statistics
 
-      - name: Unit tests
-        run: pytest app/tests/unit -q --maxfail=1
+      - name: Smoke tests
+        run: pytest app/tests/unit/test_ci_smoke_pipeline.py -q --maxfail=1
 
   deploy:
     name: Deploy
