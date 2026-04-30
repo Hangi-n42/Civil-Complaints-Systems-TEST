@@ -27,17 +27,27 @@ PR: https://github.com/Hangi-n42/Civil-Complaints-Systems-TEST/pull/20
 
 ## 4) 결과 요약
 
-실행 완료 후 갱신 예정.
+실행시간(총 런 시간)은 run_started_at ~ updated_at 기준으로 계산했습니다.
 
 | 구분 | Run ID | 설정 | 총 소요시간(초) | 비고 |
 |---|---:|---|---:|---|
-| Before | 25155372047 | cache=false | PENDING | 기준값 |
-| After-warm | 25155373903 | cache=true | PENDING | 캐시 생성 런 |
-| After-hit | 25155375651 | cache=true | PENDING | 캐시 활용 런 |
+| Before | 25155549277 | cache=false + benchmark_mode=true | 109 | 기준값 |
+| After-warm | 25155551302 | cache=true + benchmark_mode=true | 92 | 캐시 생성 런 |
+| After-hit | 25155553310 | cache=true + benchmark_mode=true | 83 | 캐시 hit 런 |
 
 개선률 공식:
 
 - 개선률(%) = ((Before - After-hit) / Before) x 100
+
+계산 결과:
+
+- Before -> After-hit 개선률: ((109 - 83) / 109) x 100 = 23.85%
+- After-warm -> After-hit 추가 개선률: ((92 - 83) / 92) x 100 = 9.78%
+
+해석:
+
+- 동일 조건에서 pip cache hit를 사용하면 기준 대비 약 23.85% 실행시간 단축 효과를 확인했습니다.
+- warm-up 런 대비 hit 런에서도 추가 9.78% 단축이 확인되었습니다.
 
 ## 5) 선택적 배포 검증
 
