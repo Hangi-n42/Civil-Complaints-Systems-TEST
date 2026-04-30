@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 칸반/백로그 운영 가이드
+    url: https://github.com/Hangi-n42/Civil-Complaints-Systems-TEST/blob/main/docs/kanban_setup.md
+    about: 이슈를 만들기 전에 칸반 보드와 분석 기준을 먼저 확인하세요.

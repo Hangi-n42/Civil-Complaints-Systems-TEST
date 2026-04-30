@@ -1,0 +1,80 @@
+{
+  "repository": "Hangi-n42/Civil-Complaints-Systems-TEST",
+  "generated_at": "2026-04-30T03:19:07.309Z",
+  "window_days": 30,
+  "cycle_time": {
+    "sample_size": 3,
+    "average_hours": 10,
+    "median_hours": 10,
+    "p95_hours": 10
+  },
+  "velocity": {
+    "total_completed_issues": 3,
+    "by_milestone": [
+      {
+        "milestone": "Sprint 1",
+        "completed_issues": 3
+      },
+      {
+        "milestone": "Sprint 2",
+        "completed_issues": 0
+      }
+    ]
+  },
+  "burndown": [
+    {
+      "milestone": "Sprint 1",
+      "due_on": null,
+      "points": [
+        {
+          "date": "2026-04-30",
+          "remaining": 3
+        }
+      ]
+    },
+    {
+      "milestone": "Sprint 2",
+      "due_on": null,
+      "points": [
+        {
+          "date": "2026-04-30",
+          "remaining": 6
+        }
+      ]
+    }
+  ],
+  "milestones": [
+    {
+      "number": 1,
+      "title": "Sprint 1",
+      "state": "open",
+      "due_on": null,
+      "created_at": "2026-04-29T17:16:21Z",
+      "completed_issues": 3,
+      "open_issues": 3,
+      "cycle_time_hours": 10,
+      "burndown": [
+        {
+          "date": "2026-04-30",
+          "remaining": 3
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Sprint 2",
+      "state": "open",
+      "due_on": null,
+      "created_at": "2026-04-29T17:16:22Z",
+      "completed_issues": 0,
+      "open_issues": 6,
+      "cycle_time_hours": null,
+      "burndown": [
+        {
+          "date": "2026-04-30",
+          "remaining": 6
+        }
+      ]
+    }
+  ]
+}

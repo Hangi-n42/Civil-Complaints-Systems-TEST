@@ -1,0 +1,68 @@
+name: Kanban Metrics
+
+on:
+  schedule:
+    - cron: '30 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      window_days:
+        description: 'Lookback window in days'
+        required: false
+        default: '30'
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
+jobs:
+  calculate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scripts
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install script dependencies
+        run: npm ci
+
+      - name: Calculate Kanban metrics
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          KANBAN_WINDOW_DAYS: ${{ github.event.inputs.window_days || '30' }}
+        run: node calc_kanban_metrics.js
+
+      - name: Commit Kanban artifacts to repository
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p ../reports/kanban/archive
+          mkdir -p ../docs/kanban_reports/archive
+          timestamp=$(date -u +"%Y-%m-%dT%H%M%SZ")
+          run_id=${GITHUB_RUN_ID:-unknown}
+          cp ../reports/kanban/kanban_metrics_latest.json ../reports/kanban/archive/kanban_metrics_${timestamp}_${run_id}.json
+          cp ../reports/kanban/kanban_weekly_report.md ../docs/kanban_reports/archive/kanban_weekly_report_${timestamp}_${run_id}.md
+          cp ../reports/kanban/kanban_weekly_report.md ../docs/kanban_reports/kanban_weekly_report_latest.md
+          git add ../reports/kanban ../docs/kanban_reports || true
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(kanban): archive and update latest metrics from run ${run_id}"
+            git push origin HEAD:main
+          fi
+
+      - name: Upload Kanban artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kanban-metrics
+          path: |
+            reports/kanban/kanban_metrics_latest.json
+            reports/kanban/kanban_weekly_report.md
+          if-no-files-found: error

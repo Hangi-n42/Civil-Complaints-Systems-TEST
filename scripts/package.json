@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dora": "node dora_metrics.js"
+    "dora": "node dora_metrics.js",
+    "kanban": "node calc_kanban_metrics.js"
   },
   "dependencies": {
     "@octokit/rest": "^19.0.7",

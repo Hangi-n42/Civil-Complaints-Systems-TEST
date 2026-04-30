@@ -111,6 +111,7 @@ AI-Civil-Affairs-Systems/
 - 학기 프로젝트 제안서: [docs/project_proposal.md](docs/project_proposal.md)
 - DORA 자동 수집 워크플로우: [.github/workflows/dora-metrics.yml](.github/workflows/dora-metrics.yml)
 - 칸반 Project 및 백로그: [docs/kanban_setup.md](docs/kanban_setup.md)
+- 칸반 분석 리포트: [reports/kanban/kanban_metrics_latest.json](reports/kanban/kanban_metrics_latest.json), [docs/kanban_reports/kanban_weekly_report_latest.md](docs/kanban_reports/kanban_weekly_report_latest.md)
 
 검증 결과
 - GitHub Project #1 생성 및 저장소 연결 완료
