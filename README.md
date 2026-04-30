@@ -123,7 +123,7 @@ AI-Civil-Affairs-Systems/
 
 대학 졸업 프로젝트 (비공개)
 
-Last Updated: 2026-04-10
+Last Updated: 2026-04-30
 Status: Active Development
 
 ## DORA 지표 자동 수집
@@ -135,4 +135,6 @@ Status: Active Development
 - 자동 수집 스크립트: [scripts/dora_metrics.js](scripts/dora_metrics.js)
 - 칸반/백로그 자동 구성: [scripts/setup_github_board.js](scripts/setup_github_board.js)
 - 생성 결과: [scripts/artifacts/dora-metrics-20260430.json](scripts/artifacts/dora-metrics-20260430.json), [scripts/artifacts/dora-dashboard-20260430.svg](scripts/artifacts/dora-dashboard-20260430.svg), [scripts/artifacts/dora-report-20260430.md](scripts/artifacts/dora-report-20260430.md)
+
+이 프로젝트의 일부 내용들은 생성형 AI로 작성하였음.
 
