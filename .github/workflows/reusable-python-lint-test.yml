@@ -1,0 +1,48 @@
+name: reusable-python-lint-test
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        required: true
+        type: string
+      cache-enabled:
+        required: false
+        type: string
+        default: "true"
+      install-profile:
+        required: false
+        type: string
+        default: "full"
+      lint-paths:
+        required: false
+        type: string
+        default: "app scripts"
+      test-target:
+        required: false
+        type: string
+        default: "app/tests/unit/test_ci_smoke_pipeline.py"
+
+jobs:
+  lint_and_test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python and dependencies
+        uses: ./.github/actions/python-ci-setup
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache-enabled: ${{ inputs.cache-enabled }}
+          install-profile: ${{ inputs.install-profile }}
+
+      - name: Lint
+        run: flake8 ${{ inputs.lint-paths }} --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Unit tests
+        run: pytest ${{ inputs.test-target }} -q --maxfail=1
