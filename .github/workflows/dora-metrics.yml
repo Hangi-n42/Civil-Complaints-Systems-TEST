@@ -45,6 +45,24 @@ jobs:
           DORA_INCIDENT_LABEL: ${{ github.event.inputs.incident_label || 'incident' }}
         run: node .github/scripts/calc_dora_metrics.mjs
 
+      - name: Commit DORA artifacts to repository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p reports/dora
+          mkdir -p docs/dora_reports
+          if [ -f "artifacts/dora/dora_metrics_latest.json" ]; then
+            cp artifacts/dora/dora_metrics_latest.json "reports/dora/dora_metrics_${{ github.run_id }}.json"
+          fi
+          if [ -f "artifacts/dora/dora_weekly_report.md" ]; then
+            cp artifacts/dora/dora_weekly_report.md "docs/dora_reports/dora_weekly_report_${{ github.run_id }}.md"
+          fi
+          git add reports/dora docs/dora_reports || true
+          git diff --staged --quiet || (git commit -m "chore(dora): add metrics artifacts from run ${{ github.run_id }}" && git push origin HEAD:${{ github.ref_name }}) || echo "No changes to commit or push failed"
+
       - name: Upload DORA artifacts
         uses: actions/upload-artifact@v4
         with:
