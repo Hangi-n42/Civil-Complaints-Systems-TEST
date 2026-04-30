@@ -6,11 +6,11 @@
     <line x1="60" y1="300" x2="860" y2="300" stroke="#cbd5e1" stroke-width="2" />
     <rect x="80" y="294" width="160" height="6" rx="12" fill="#1f77b4" />
     <text x="160" y="328" text-anchor="middle" font-size="16" fill="#1f2937">DeploymentFreq/wk</text>
-    <text x="160" y="284" text-anchor="middle" font-size="18" font-weight="700" fill="#111827">0.00</text>
+    <text x="160" y="284" text-anchor="middle" font-size="18" font-weight="700" fill="#111827">1.00</text>
     <rect x="300" y="294" width="160" height="6" rx="12" fill="#ff7f0e" />
     <text x="380" y="328" text-anchor="middle" font-size="16" fill="#1f2937">AvgLeadDays</text>
-    <text x="380" y="284" text-anchor="middle" font-size="18" font-weight="700" fill="#111827">0.00</text>
+    <text x="380" y="284" text-anchor="middle" font-size="18" font-weight="700" fill="#111827">0.01</text>
     <rect x="520" y="294" width="160" height="6" rx="12" fill="#2ca02c" />
     <text x="600" y="328" text-anchor="middle" font-size="16" fill="#1f2937">MTTR(h)</text>
-    <text x="600" y="284" text-anchor="middle" font-size="18" font-weight="700" fill="#111827">0.00</text>
+    <text x="600" y="284" text-anchor="middle" font-size="18" font-weight="700" fill="#111827">N/A</text>
   </svg>
