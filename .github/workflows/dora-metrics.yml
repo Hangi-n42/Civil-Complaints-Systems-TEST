@@ -32,8 +32,8 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Skip install (no node deps required)
+        run: echo "No npm install required for DORA script"
 
       - name: Calculate DORA metrics
         env:
