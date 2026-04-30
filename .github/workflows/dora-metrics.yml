@@ -45,23 +45,32 @@ jobs:
           DORA_INCIDENT_LABEL: ${{ github.event.inputs.incident_label || 'incident' }}
         run: node .github/scripts/calc_dora_metrics.mjs
 
-      - name: Commit DORA artifacts to repository
+      - name: Commit DORA artifacts to repository (overwrite latest + archive)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -e
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mkdir -p reports/dora
-          mkdir -p docs/dora_reports
+          mkdir -p reports/dora/archive
+          mkdir -p docs/dora_reports/archive
+          timestamp=$(date -u +"%Y-%m-%dT%H%M%SZ")
+          run_id=${GITHUB_RUN_ID:-unknown}
           if [ -f "artifacts/dora/dora_metrics_latest.json" ]; then
-            cp artifacts/dora/dora_metrics_latest.json "reports/dora/dora_metrics_${{ github.run_id }}.json"
+            cp artifacts/dora/dora_metrics_latest.json "reports/dora/archive/dora_metrics_${timestamp}_${run_id}.json"
+            cp artifacts/dora/dora_metrics_latest.json "reports/dora/dora_metrics_latest.json"
           fi
           if [ -f "artifacts/dora/dora_weekly_report.md" ]; then
-            cp artifacts/dora/dora_weekly_report.md "docs/dora_reports/dora_weekly_report_${{ github.run_id }}.md"
+            cp artifacts/dora/dora_weekly_report.md "docs/dora_reports/archive/dora_weekly_report_${timestamp}_${run_id}.md"
+            cp artifacts/dora/dora_weekly_report.md "docs/dora_reports/dora_weekly_report_latest.md"
           fi
           git add reports/dora docs/dora_reports || true
-          git diff --staged --quiet || (git commit -m "chore(dora): add metrics artifacts from run ${{ github.run_id }}" && git push origin HEAD:${{ github.ref_name }}) || echo "No changes to commit or push failed"
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(dora): archive and update latest artifacts from run ${run_id}"
+            git push origin HEAD:main
+          fi
 
       - name: Upload DORA artifacts
         uses: actions/upload-artifact@v4
