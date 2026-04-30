@@ -80,15 +80,6 @@ jobs:
             optimized-build.tar.gz
             build-info.txt
 
-  test_py310:
-    name: Test Reusable (py3.10)
-    needs: [detect_changes, build]
-    if: needs.detect_changes.outputs.app_changed == 'true' || github.event_name == 'workflow_dispatch'
-    uses: ./.github/workflows/reusable-python-lint-test.yml
-    with:
-      python-version: '3.10'
-      cache-enabled: ${{ inputs.cache_enabled || 'true' }}
-
   test_py311:
     name: Test Reusable (py3.11)
     needs: [detect_changes, build]
@@ -109,7 +100,7 @@ jobs:
 
   deploy:
     name: Selective Deploy
-    needs: [detect_changes, test_py310, test_py311, test_py312]
+    needs: [detect_changes, test_py311, test_py312]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') &&
       needs.detect_changes.outputs.deploy_needed == 'true'
