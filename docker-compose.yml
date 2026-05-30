@@ -1,0 +1,102 @@
+# [10주차] Docker 기반 배포 파이프라인 전략
+# 전체 스택(API + Frontend + ChromaDB) 로컬/프로덕션 실행
+
+version: '3.9'
+
+services:
+  # ─── FastAPI 백엔드 ─────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: ghcr.io/hangi-n42/civil-complaints-systems-test:latest
+    container_name: civil-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - CHROMADB_HOST=chromadb
+      - CHROMADB_PORT=8001
+      # Ollama는 호스트에서 실행 (GPU 활용)
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    env_file:
+      - .env
+    depends_on:
+      chromadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - ./logs:/app/logs        # 로그 영속화
+    networks:
+      - civil-network
+
+  # ─── Next.js 프론트엔드 ──────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+    container_name: civil-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:8000
+      - NEXT_PUBLIC_DEPLOY_ENV=${DEPLOY_ENV:-production}
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - civil-network
+
+  # ─── ChromaDB 벡터 데이터베이스 ─────────────────────────
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: civil-chromadb
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    volumes:
+      - chromadb-data:/chroma/chroma   # 벡터 데이터 영속화
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - civil-network
+
+  # ─── Nginx 리버스 프록시 (프로덕션용) ───────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: civil-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./configs/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./configs/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+      - frontend
+    networks:
+      - civil-network
+    profiles:
+      - production    # docker compose --profile production up 으로 활성화
+
+volumes:
+  chromadb-data:
+    driver: local
+
+networks:
+  civil-network:
+    driver: bridge

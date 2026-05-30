@@ -1,0 +1,118 @@
+# [10주차] PR 프리뷰 환경 자동 구성 워크플로우
+# PR 생성/업데이트 시 Vercel Preview 배포 또는 GitHub Pages 브랜치 배포
+
+name: PR Preview Deploy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - 'frontend/**'
+
+permissions:
+  contents: write
+  pull-requests: write     # PR 코멘트 권한
+  deployments: write
+
+jobs:
+  # ─── PR 열림/업데이트 시: 프리뷰 빌드 & 배포 ──────────
+  deploy-preview:
+    name: PR 프리뷰 배포
+    runs-on: ubuntu-latest
+    if: github.event.action != 'closed'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 의존성 설치
+        working-directory: frontend
+        run: npm ci
+
+      - name: 프리뷰 빌드
+        working-directory: frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_BASE_PATH: /Civil-Complaints-Systems-TEST/preview/pr-${{ github.event.number }}
+          NEXT_PUBLIC_DEPLOY_ENV: preview
+          NEXT_PUBLIC_PR_NUMBER: ${{ github.event.number }}
+
+      # gh-pages 브랜치의 preview/pr-{N} 경로에 배포
+      - name: GitHub Pages 프리뷰 경로 배포
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: frontend/out
+          destination_dir: preview/pr-${{ github.event.number }}
+          keep_files: true
+          commit_message: "preview: PR #${{ github.event.number }} 프리뷰 배포"
+
+      # PR에 프리뷰 URL 코멘트 자동 추가
+      - name: PR 프리뷰 URL 코멘트
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const previewUrl = `https://hangi-n42.github.io/Civil-Complaints-Systems-TEST/preview/pr-${prNumber}/`;
+            const sha = context.payload.pull_request.head.sha.slice(0, 7);
+
+            // 기존 프리뷰 코멘트 찾기
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const existing = comments.data.find(c =>
+              c.body.includes('🔍 PR 프리뷰 배포') && c.user.type === 'Bot'
+            );
+
+            const body = `## 🔍 PR 프리뷰 배포\n\n| 항목 | 내용 |\n|------|------|\n| 🌐 프리뷰 URL | [열기](${previewUrl}) |\n| 📝 커밋 | \`${sha}\` |\n| ⏱️ 배포 시각 | ${new Date().toLocaleString('ko-KR', {timeZone: 'Asia/Seoul'})} |\n\n> 이 PR이 닫히면 프리뷰는 자동으로 삭제됩니다.`;
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
+
+  # ─── PR 닫힘 시: 프리뷰 정리 ──────────────────────────
+  cleanup-preview:
+    name: PR 프리뷰 정리
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 프리뷰 디렉토리 삭제
+        run: |
+          PR_DIR="preview/pr-${{ github.event.number }}"
+          if [ -d "$PR_DIR" ]; then
+            rm -rf "$PR_DIR"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "cleanup: PR #${{ github.event.number }} 프리뷰 삭제"
+            git push
+            echo "프리뷰 삭제 완료: $PR_DIR"
+          else
+            echo "삭제할 프리뷰 없음: $PR_DIR"
+          fi
+        continue-on-error: true
