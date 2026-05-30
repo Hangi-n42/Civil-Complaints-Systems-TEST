@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# 테스트/문서
+docs/
+reports/
+logs/
+*.md
+*.txt
+
+# Node.js
+node_modules/
+frontend/.next/
+frontend/out/
+
+# 개발 도구
+.github/
+scripts/
+temp_artifacts/
+
+# 비밀 파일
+*.env
+.env.*
+!.env.example
