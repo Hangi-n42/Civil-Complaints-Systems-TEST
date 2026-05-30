@@ -1,0 +1,22 @@
+{
+  "name": "@hangi-n42/civil-utils",
+  "version": "1.0.0",
+  "description": "민원 시스템 공통 유틸리티 패키지",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "test": "node --test tests/",
+    "prepublishOnly": "node -e \"console.log('패키지 배포 준비 완료')\""
+  },
+  "keywords": ["civil", "complaints", "utils", "korean"],
+  "author": "Hangi-n42",
+  "license": "MIT",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hangi-n42/Civil-Complaints-Systems-TEST.git",
+    "directory": "packages/civil-utils"
+  }
+}

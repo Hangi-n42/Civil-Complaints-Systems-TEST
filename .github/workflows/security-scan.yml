@@ -1,0 +1,170 @@
+# [9주차] 보안 취약점 자동 스캔 워크플로우
+# npm audit + Snyk 기반 스캔 → 결과를 GitHub Issue/Summary로 자동화
+
+name: Security Scan (npm audit + Snyk)
+
+on:
+  schedule:
+    - cron: '0 1 * * 1'    # 매주 월요일 오전 10시 KST (UTC 01:00)
+  push:
+    branches: [main]
+    paths:
+      - '**/package.json'
+      - '**/package-lock.json'
+      - 'requirements.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write             # 취약점 이슈 자동 생성 권한
+  security-events: write    # SARIF 업로드 권한
+
+jobs:
+  # ─── npm audit (프론트엔드) ──────────────────────────────
+  npm-audit-frontend:
+    name: npm audit (frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 의존성 설치
+        working-directory: frontend
+        run: npm ci --ignore-scripts
+
+      - name: npm audit 실행 (JSON 출력)
+        id: audit
+        working-directory: frontend
+        run: |
+          npm audit --json > /tmp/audit-frontend.json || true
+          VULN_COUNT=$(cat /tmp/audit-frontend.json | python3 -c "
+          import json,sys
+          data = json.load(sys.stdin)
+          meta = data.get('metadata', {})
+          vulns = meta.get('vulnerabilities', {})
+          total = vulns.get('high', 0) + vulns.get('critical', 0)
+          print(total)
+          ")
+          echo "HIGH_CRITICAL_COUNT=$VULN_COUNT" >> $GITHUB_OUTPUT
+          echo "audit JSON 생성 완료: 고위험 $VULN_COUNT건"
+
+      - name: audit 결과 요약 출력
+        run: |
+          echo "### 🔍 npm audit 결과 (frontend)" >> $GITHUB_STEP_SUMMARY
+          python3 -c "
+          import json
+          with open('/tmp/audit-frontend.json') as f:
+              data = json.load(f)
+          meta = data.get('metadata', {})
+          vulns = meta.get('vulnerabilities', {})
+          print(f\"| 등급 | 건수 |\")
+          print(f\"|------|------|\"  )
+          for level in ['critical','high','moderate','low','info']:
+              count = vulns.get(level, 0)
+              emoji = '🔴' if level in ['critical','high'] else '🟡' if level == 'moderate' else '🟢'
+              print(f\"| {emoji} {level} | {count} |\")
+          " >> $GITHUB_STEP_SUMMARY
+
+      # 고위험 취약점 발견 시 GitHub Issue 자동 생성
+      - name: 취약점 이슈 자동 생성
+        if: steps.audit.outputs.HIGH_CRITICAL_COUNT > 0
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const audit = JSON.parse(fs.readFileSync('/tmp/audit-frontend.json', 'utf8'));
+            const vulns = audit.vulnerabilities || {};
+            const highItems = Object.entries(vulns)
+              .filter(([, v]) => ['high','critical'].includes(v.severity))
+              .map(([name, v]) => `- **${name}** (${v.severity}): ${v.via?.[0]?.title || '설명 없음'}`)
+              .join('\n');
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔴 보안 취약점 발견: npm audit (frontend) - ${new Date().toISOString().split('T')[0]}`,
+              body: `## npm audit 취약점 리포트\n\n**스캔 일시**: ${new Date().toLocaleString('ko-KR')}\n\n### 고위험 패키지\n${highItems}\n\n### 조치 방법\n\`\`\`bash\ncd frontend\nnpm audit fix\n# 또는 브레이킹 체인지 포함:\nnpm audit fix --force\n\`\`\`\n\n> 이 이슈는 GitHub Actions에 의해 자동 생성되었습니다.`,
+              labels: ['security', 'dependencies']
+            });
+
+      - name: audit 결과 아티팩트 저장
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-frontend-${{ github.run_number }}
+          path: /tmp/audit-frontend.json
+          retention-days: 30
+
+  # ─── npm audit (civil-utils 패키지) ─────────────────────
+  npm-audit-package:
+    name: npm audit (civil-utils)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: npm audit 실행
+        working-directory: packages/civil-utils
+        run: |
+          npm audit --json > /tmp/audit-package.json || true
+          echo "### 🔍 npm audit 결과 (civil-utils)" >> $GITHUB_STEP_SUMMARY
+          cat /tmp/audit-package.json | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          v=d.get('metadata',{}).get('vulnerabilities',{})
+          total=sum(v.values())
+          print(f'총 취약점: {total}건')
+          " >> $GITHUB_STEP_SUMMARY
+
+  # ─── Snyk 보안 스캔 ─────────────────────────────────────
+  snyk-scan:
+    name: Snyk 보안 스캔
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Snyk 설치
+        run: npm install -g snyk
+
+      # Snyk token이 있을 때만 실행 (없으면 스킵)
+      - name: Snyk npm 스캔
+        if: secrets.SNYK_TOKEN != ''
+        working-directory: frontend
+        run: |
+          snyk auth ${{ secrets.SNYK_TOKEN }}
+          snyk test --json > /tmp/snyk-result.json || true
+          snyk test --sarif-file-output=/tmp/snyk.sarif || true
+          echo "Snyk 스캔 완료"
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Snyk SARIF 업로드 (CodeQL 뷰어)
+        if: secrets.SNYK_TOKEN != '' && hashFiles('/tmp/snyk.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: /tmp/snyk.sarif
+        continue-on-error: true
+
+      # Snyk token 없을 때 안내 메시지
+      - name: Snyk 미설정 안내
+        if: secrets.SNYK_TOKEN == ''
+        run: |
+          echo "### ℹ️ Snyk 스캔 스킵" >> $GITHUB_STEP_SUMMARY
+          echo "SNYK_TOKEN Secret을 설정하면 Snyk 스캔이 활성화됩니다." >> $GITHUB_STEP_SUMMARY
+          echo "설정 방법: Settings → Secrets and variables → Actions → New repository secret" >> $GITHUB_STEP_SUMMARY
+
+      - name: Snyk 결과 아티팩트 저장
+        if: hashFiles('/tmp/snyk-result.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-report-${{ github.run_number }}
+          path: /tmp/snyk-result.json
+          retention-days: 30

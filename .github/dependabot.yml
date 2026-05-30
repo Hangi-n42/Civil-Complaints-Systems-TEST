@@ -1,0 +1,103 @@
+# [9주차] Dependabot 자동 의존성 업데이트 정책
+# 스케줄, 그룹, 자동머지 조건 설정
+
+version: 2
+
+updates:
+  # ── Python (pip) 의존성 ──────────────────────────────────
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"          # 매주 월요일 오전 9시 KST
+      day: "monday"
+      time: "00:00"               # UTC 00:00 = KST 09:00
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
+    # 관련 패키지 그룹으로 묶어 PR 수 감소
+    groups:
+      fastapi-group:
+        patterns:
+          - "fastapi"
+          - "uvicorn"
+          - "pydantic*"
+          - "starlette"
+      llm-group:
+        patterns:
+          - "ollama*"
+          - "chromadb"
+          - "langchain*"
+          - "openai"
+      testing-group:
+        patterns:
+          - "pytest*"
+          - "coverage"
+          - "hypothesis"
+    # 보안 취약점 패치는 즉시 업데이트
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]   # 메이저 버전 자동 업데이트 제외
+    labels:
+      - "dependencies"
+      - "python"
+
+  # ── npm (frontend) 의존성 ────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "00:00"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
+    groups:
+      next-group:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+      typescript-group:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      tailwind-group:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "postcss"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    labels:
+      - "dependencies"
+      - "javascript"
+
+  # ── npm (패키지 유틸) 의존성 ─────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/packages/civil-utils"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "00:00"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "npm-package"
+
+  # ── GitHub Actions 워크플로우 의존성 ─────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "00:00"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 3
+    groups:
+      actions-group:
+        patterns:
+          - "actions/*"
+          - "docker/*"
+    labels:
+      - "dependencies"
+      - "github-actions"
