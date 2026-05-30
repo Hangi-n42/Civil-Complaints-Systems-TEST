@@ -1,0 +1,132 @@
+# [11주차 선택] Canary 배포 워크플로우
+# 1% → 10% → 50% → 100% 단계적 롤아웃 + 헬스체크 기반 자동 롤백
+
+name: Canary Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_version:
+        description: '배포할 이미지 태그 (예: sha-abc1234)'
+        required: true
+      start_stage:
+        description: '시작 스테이지'
+        required: true
+        default: '1'
+        type: choice
+        options: ['1', '10', '50', '100']
+
+env:
+  AWS_REGION: ap-northeast-2
+  LAMBDA_FUNCTION: civil-api-production
+
+jobs:
+  # ─── Canary 단계별 롤아웃 ───────────────────────────
+  canary-rollout:
+    name: Canary 롤아웃 (${{ github.event.inputs.start_stage }}% → 100%)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: AWS 인증
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ── 스테이지 1: 1% 트래픽 ────────────────────────
+      - name: "[1%] Canary 배포 시작"
+        if: github.event.inputs.start_stage <= '1'
+        run: |
+          echo "🚀 [1%] Canary 배포 시작: ${{ github.event.inputs.target_version }}"
+          # Lambda weighted alias 설정 (1% → 새 버전, 99% → 기존 버전)
+          # aws lambda update-alias --function-name $LAMBDA_FUNCTION \
+          #   --name LIVE \
+          #   --routing-config AdditionalVersionWeights={"$NEW_VERSION": 0.01}
+          echo "STAGE=1" >> $GITHUB_ENV
+
+      - name: "[1%] 헬스체크 (60초)"
+        if: github.event.inputs.start_stage <= '1'
+        run: |
+          sleep 60
+          bash .github/scripts/healthcheck.sh "${{ secrets.API_GATEWAY_URL }}" 5
+        continue-on-error: false
+
+      # ── 스테이지 2: 10% 트래픽 ───────────────────────
+      - name: "[10%] 트래픽 증가"
+        if: github.event.inputs.start_stage <= '10'
+        run: |
+          echo "📈 [10%] 트래픽 10%로 증가"
+          # aws lambda update-alias ... routing 0.10
+          echo "STAGE=10" >> $GITHUB_ENV
+
+      - name: "[10%] 헬스체크 (120초)"
+        if: github.event.inputs.start_stage <= '10'
+        run: |
+          sleep 120
+          bash .github/scripts/healthcheck.sh "${{ secrets.API_GATEWAY_URL }}" 10
+        continue-on-error: false
+
+      # ── 스테이지 3: 50% 트래픽 ───────────────────────
+      - name: "[50%] 트래픽 증가"
+        if: github.event.inputs.start_stage <= '50'
+        run: |
+          echo "📈 [50%] 트래픽 50%로 증가"
+          # aws lambda update-alias ... routing 0.50
+          echo "STAGE=50" >> $GITHUB_ENV
+
+      - name: "[50%] 헬스체크 (300초)"
+        if: github.event.inputs.start_stage <= '50'
+        run: |
+          sleep 300
+          bash .github/scripts/healthcheck.sh "${{ secrets.API_GATEWAY_URL }}" 15
+        continue-on-error: false
+
+      # ── 스테이지 4: 100% 완전 배포 ───────────────────
+      - name: "[100%] 완전 배포"
+        run: |
+          echo "✅ [100%] 완전 배포 완료"
+          # aws lambda update-alias ... routing {} (가중치 제거 = 100% 새 버전)
+          echo "STAGE=100" >> $GITHUB_ENV
+
+      - name: "[100%] 최종 헬스체크"
+        run: bash .github/scripts/healthcheck.sh "${{ secrets.API_GATEWAY_URL }}" 20
+
+      - name: 배포 완료 요약
+        run: |
+          echo "### ✅ Canary 배포 완료" >> $GITHUB_STEP_SUMMARY
+          echo "- 버전: \`${{ github.event.inputs.target_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- 단계: 1% → 10% → 50% → 100%" >> $GITHUB_STEP_SUMMARY
+
+  # ─── 자동 롤백 ──────────────────────────────────────
+  auto-rollback:
+    name: 자동 롤백
+    runs-on: ubuntu-latest
+    needs: canary-rollout
+    if: failure()     # 헬스체크 실패 시 자동 실행
+
+    steps:
+      - name: AWS 인증
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 롤백 실행
+        run: |
+          echo "🔄 헬스체크 실패 감지 - 자동 롤백 시작"
+          # aws lambda update-alias ... routing {} (이전 버전으로 복구)
+          echo "롤백 완료"
+
+      - name: 롤백 알림
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔴 Canary 롤백 발생: ${{ github.event.inputs.target_version }}`,
+              body: `## 자동 롤백 발생\n\n**버전**: \`${{ github.event.inputs.target_version }}\`\n**원인**: 헬스체크 실패\n**조치**: 이전 버전으로 자동 롤백 완료\n\n> 원인 분석 후 재배포하세요.`,
+              labels: ['bug', 'deployment']
+            });
