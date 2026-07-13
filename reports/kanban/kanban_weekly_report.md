@@ -1,7 +1,7 @@
 # Kanban Metrics Report
 
 - Repository: Hangi-n42/Civil-Complaints-Systems-TEST
-- Generated at: 2026-07-06T08:01:59.086Z
+- Generated at: 2026-07-13T06:37:07.509Z
 - Window days: 30
 
 ## Cycle Time
@@ -16,8 +16,8 @@
 - Sprint 2: 0
 
 ## Burndown
-- Sprint 1: 69 daily points
-- Sprint 2: 69 daily points
+- Sprint 1: 76 daily points
+- Sprint 2: 76 daily points
 
 ## Artifacts
 - JSON: ../reports/kanban/kanban_metrics_latest.json
