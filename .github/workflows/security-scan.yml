@@ -25,9 +25,9 @@ jobs:
     name: npm audit (frontend)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
 
@@ -71,7 +71,7 @@ jobs:
       # 고위험 취약점 발견 시 GitHub Issue 자동 생성
       - name: 취약점 이슈 자동 생성
         if: steps.audit.outputs.HIGH_CRITICAL_COUNT > 0
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
@@ -91,7 +91,7 @@ jobs:
             });
 
       - name: audit 결과 아티팩트 저장
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: npm-audit-frontend-${{ github.run_number }}
           path: /tmp/audit-frontend.json
@@ -102,8 +102,8 @@ jobs:
     name: npm audit (civil-utils)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
       - name: npm audit 실행
@@ -124,9 +124,9 @@ jobs:
     name: Snyk 보안 스캔
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
 
@@ -163,7 +163,7 @@ jobs:
 
       - name: Snyk 결과 아티팩트 저장
         if: hashFiles('/tmp/snyk-result.json') != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: snyk-report-${{ github.run_number }}
           path: /tmp/snyk-result.json
