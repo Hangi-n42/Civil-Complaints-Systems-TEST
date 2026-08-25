@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: AWS 인증
         uses: aws-actions/configure-aws-credentials@v4
@@ -120,7 +120,7 @@ jobs:
           echo "롤백 완료"
 
       - name: 롤백 알림
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.issues.create({
