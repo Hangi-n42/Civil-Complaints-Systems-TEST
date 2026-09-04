@@ -148,7 +148,7 @@ jobs:
 
       - name: Snyk SARIF 업로드 (CodeQL 뷰어)
         if: secrets.SNYK_TOKEN != '' && hashFiles('/tmp/snyk.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: /tmp/snyk.sarif
         continue-on-error: true
